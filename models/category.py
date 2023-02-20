@@ -1,9 +1,7 @@
 # компоненты библиотеки для описания структуры таблицы
 from sqlalchemy import Column, String, Integer, Boolean
-# класс-конструктор для работы с декларативным стилем работы в SQLAlchemy
-from sqlalchemy.ext.declarative import declarative_base
-# инициализация декларативного стиля
-Base = declarative_base()
+
+from data_base.dbcore import Base
 
 
 class Category(Base):

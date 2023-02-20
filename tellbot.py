@@ -20,7 +20,7 @@ class TelBot:
         """
         # получаем токен
         self.token = config.TOKEN
-        # инициализируем бот на основе зарегистрированого токена
+        # инициализируем бот на основе зарегистрированного токена
         self.bot = TeleBot(self.token)
         # инициализируем обработчик событий
         self.handler = HandlerMain(self.bot)

@@ -1,10 +1,25 @@
+from os import path  # для построения правильного пути до БД
+from datetime import datetime
+# функция для создания объекта, подключения к БД
+from sqlalchemy import create_engine
+# все операции с БД выполняются через сессию,
+# поэтому должны создать класс сессии
+from sqlalchemy.orm import sessionmaker
+# необхлдим для переноса всех изменений
+#  в моделях на структуру наших таблиц в БД
+from data_base.dbcore import Base
+
+from settings import config
+from settings import utility
+from models.product import Products
+from models.order import Order
 
 
 class Singleton(type):
     """
     Патерн Singleton предоставляет механизм создания одного
     и только одного объекта класса,
-    и предоставление к нему глобальную точку доступа.
+    и предоставление к нему глобальной точки доступа
     """
     def __init__(cls, name, bases, attrs, **kwargs):
         super().__init__(name, bases, attrs)
@@ -22,4 +37,145 @@ class DBManager(metaclass=Singleton):
     """
 
     def __init__(self):
-        pass
+        """
+        Инициализация сессии подключения к БД
+        """
+        self.engine = create_engine(config.DATABASE)  # подключение к БД
+        session = sessionmaker(bind=self.engine)  # создание класса сессии
+        self._session = session()
+        if not path.isfile(config.DATABASE):
+            Base.metadata.create_all(self.engine)
+
+    def select_all_products_category(self, category):
+        """
+        Возвращает все строки товара категории
+        """
+        # получаем массив товаров текущей категории
+        result = self._session.query(Products).filter_by(
+            category_id=category).all()
+
+        self.close()
+        return result
+
+    def close(self):
+        self._session.close()
+
+    # Работа с заказом
+    def _add_orders(self, quantity, product_id, user_id,):
+        """
+        Метод заполнения заказа
+        """
+        # получаем список всех product_id
+        all_id_product = self.select_all_product_id()
+        # если данные есть в списке, обновляем таблицы заказа и продуктов
+        if product_id in all_id_product:
+            quantity_order = self.select_order_quantity(product_id)
+            quantity_order += 1
+            self.update_order_value(product_id, 'quantity', quantity_order)
+
+            quantity_product = self.select_single_product_quantity(product_id)
+            quantity_product -= 1
+            self.update_product_value(product_id, 'quantity', quantity_product)
+            return
+        # если данных нет, создаем новый объект заказа
+        else:
+            order = Order(quantity=quantity, product_id=product_id,
+                          user_id=user_id, data=datetime.now())
+            quantity_product = self.select_single_product_quantity(product_id)
+            quantity_product -= 1
+            self.update_product_value(product_id, 'quantity', quantity_product)
+
+        self._session.add(order)
+        self._session.commit()
+        self.close()
+
+    def select_all_product_id(self):
+        """
+        Возвращает все id товара в заказе
+        """
+        result = self._session.query(Order.product_id).all()
+        self.close()
+        # конвертируем результат выборки в вид [1,3,5...]
+        return utility._convert(result)
+
+    def select_single_product_quantity(self, rownum):
+        """
+        Возвращает количество товара на складе
+        в соответствии с номером товара - rownum
+        Этот номер определяется при выборе товара в интерфейсе.
+        """
+        result = self._session.query(
+            Products.quantity).filter_by(id=rownum).one()
+        self.close()
+        return result.quantity
+
+    def update_product_value(self, rownum, name, value):
+        """
+        Обновляет количество товара на складе
+        в соответствии с номером товара - rownum
+        """
+        self._session.query(Products).filter_by(
+            id=rownum).update({name: value})
+        self._session.commit()
+        self.close()
+
+    def update_order_value(self, product_id, name, value):
+        """
+        Обновляет данные указанной позиции заказа
+        в соответствии с номером товара - rownum
+        """
+        self._session.query(Order).filter_by(
+            product_id=product_id).update({name: value})
+        self._session.commit()
+        self.close()
+
+    def select_single_product_name(self, rownum):
+        """
+        Возвращает название товара
+        в соответствии с номером товара - rownum
+        """
+        result = self._session.query(Products.name).filter_by(id=rownum).one()
+        self.close()
+        return result.name
+
+    def select_single_product_title(self, rownum):
+        """
+        Возвращает торговую марку товара
+        в соответствии с номером товара - rownum
+        """
+        result = self._session.query(Products.title).filter_by(id=rownum).one()
+        self.close()
+        return result.title
+
+    def select_single_product_price(self, rownum):
+        """
+        Возвращает цену товара
+        в соответствии с номером товара - rownum
+        """
+        result = self._session.query(Products.price).filter_by(id=rownum).one()
+        self.close()
+        return result.price
+
+    def count_rows_order(self):
+        """
+        Возвращает количество позиций в заказе
+        """
+        result = self._session.query(Order).count()
+        self.close()
+        return result
+
+    def select_order_quantity(self, product_id):
+        """
+        Возвращает количество товара из заказа
+        в соответствии с номером товара - rownum
+        """
+        result = self._session.query(Order.quantity).filter_by(
+            product_id=product_id).one()
+        self.close()
+        return result.quantity
+
+    # def delete_order(self, product_id):
+    #     update_product_value
+    #     self._session.query(Order).filter_by(product_id=product_id).delete()
+    #     self._session.commit()
+    #     self.close()
