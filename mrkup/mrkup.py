@@ -23,6 +23,13 @@ class Keyboards:
         """
         Создает и возвращает кнопку по входным параметрам
         """
+        if name == 'AMOUNT_ORDERS':
+            config.KEYBOARD['AMOUNT_ORDERS'] = "{} {} {}".format(
+                step + 1, ' из ', str(self.BD.count_rows_order())
+            )
+
+        if name == 'AMOUNT_PRODUCT':
+            config.KEYBOARD['AMOUNT_PRODUCT'] = "{}".format(quantity)
 
         return KeyboardButton(config.KEYBOARD[name])
 
@@ -106,7 +113,7 @@ class Keyboards:
 
         self.markup = ReplyKeyboardMarkup(True, True)
         itm_btn_1 = self.set_btn('X', step, quantity)
-        itm_btn_2 = self.set_btn('DOUWN', step, quantity)
+        itm_btn_2 = self.set_btn('DOWN', step, quantity)
         itm_btn_3 = self.set_btn('AMOUNT_PRODUCT', step, quantity)
         itm_btn_4 = self.set_btn('UP', step, quantity)
 

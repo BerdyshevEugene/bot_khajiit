@@ -94,6 +94,93 @@ class HandlerAllText(Handler):
             reply_markup=self.keyboards.orders_menu(self.step, quantity)
         )
 
+    def pressed_btn_up(self, message):
+        """
+        Обрабатывает входящие текстовые сообщения при нажатии
+        на кнопку up.
+        """
+        # получаем список всех товаров в заказе
+        count = self.BD.select_all_product_id()
+        # получаем количество конкретной позиции в заказе
+        quantity_order = self.BD.select_order_quantity(count[self.step])
+        # получаем количество конкретной позиции на складе
+        quantity_product = self.BD.select_single_product_quantity(
+            count[self.step])
+        # если товар есть
+        if quantity_product > 0:
+            quantity_order += 1
+            quantity_product -= 1
+            # вносим изменения в БД orders
+            self.BD.update_order_value(
+                count[self.step], 'quantity', quantity_order)
+            # вносим изменения в БД product
+            self.BD.update_product_value(
+                count[self.step], 'quantity', quantity_product)
+        # отправляем ответ пользователю
+        self.send_message_order(count[self.step], quantity_order, message)
+
+    def pressed_btn_down(self, message):
+        """
+        Обрабатывает входящие текстовые сообщения при нажатии
+        на кнопку down.
+        """
+        # получаем список всех товаров в заказе
+        count = self.BD.select_all_product_id()
+        # получаем количество конкретной позиции в заказе
+        quantity_order = self.BD.select_order_quantity(count[self.step])
+        # получаем количество конкретной позиции на складе
+        quantity_product = self.BD.select_single_product_quantity(
+            count[self.step])
+        # если товар в заказе есть
+        if quantity_order > 0:
+            quantity_order -= 1
+            quantity_product += 1
+            # вносим изменения в БД orders
+            self.BD.update_order_value(
+                count[self.step], 'quantity', quantity_order)
+            # вносим изменения в БД product
+            self.BD.update_product_value(
+                count[self.step], 'quantity', quantity_product)
+        # отправляем ответ пользователю
+        self.send_message_order(count[self.step], quantity_order, message)
+
+    def pressed_btn_x(self, message):
+        """
+        Обрабатывает входящие текстовые сообщения при нажатии
+        на кнопку X.
+        """
+        # получаем список всех product_id заказа
+        count = self.BD.select_all_product_id()
+        # если список не пустой
+        if count.__len__() > 0:
+            # получаем количество конкретной позиции в заказе
+            quantity_order = self.BD.select_order_quantity(count[self.step])
+            # получаем количество товара к конкретной позиции
+            # заказа для возврата на склад (в product)
+            quantity_product = self.BD.select_single_product_quantity(
+                count[self.step])
+            quantity_product += quantity_order
+            # вносим изменения в БД orders
+            self.BD.delete_order(count[self.step])
+            # вносим изменения в БД product
+            self.BD.update_product_value(
+                count[self.step], 'quantity', quantity_product)
+            # уменьшаем шаг
+            self.step -= 1
+
+        count = self.BD.select_all_product_id()
+        # если список не пуст
+        if count.__len__() > 0:
+            quantity_order = self.BD.select_order_quantity(count[self.step])
+            # отправляем пользователю сообщение
+            self.send_message_order(count[self.step], quantity_order, message)
+
+        else:
+            # если товара в заказе нет, отправляем следующее сообщение
+            self.bot.send_message(message.chat.id, MESSAGES['no_orders'],
+                                  parse_mode="HTML",
+                                  reply_markup=self.keyboards.category_menu())
+
     def handle(self):
         # обработчик(декоратор) сообщений, который обрабатывает
         # входящие текстовые сообщения при нажатии кнопок.
@@ -134,3 +221,16 @@ class HandlerAllText(Handler):
 
             if message.text == config.KEYBOARD['ICE_CREAM']:
                 self.pressed_btn_product(message, 'ICE_CREAM')
+
+            # ********** меню (Заказа) ********** #
+            if message.text == config.KEYBOARD['UP']:
+                self.pressed_btn_up(message)
+
+            if message.text == config.KEYBOARD['DOWN']:
+                self.pressed_btn_down(message)
+
+            if message.text == config.KEYBOARD['X']:
+                self.pressed_btn_x(message)
+
+            if message.text == config.KEYBOARD['BACK_STEP']:
+                self.pressed_btn_back_step(message)
