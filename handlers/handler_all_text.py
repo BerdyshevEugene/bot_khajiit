@@ -181,6 +181,39 @@ class HandlerAllText(Handler):
                                   parse_mode="HTML",
                                   reply_markup=self.keyboards.category_menu())
 
+    def pressed_btn_back_step(self, message):
+        """
+        Обрабатывает входящие текстовые сообщения при
+        нажатии на кнопку back_step.
+        """
+        # уменьшает шаг, пока шаг не будет равен 0
+        if self.step > 0:
+            self.step -= 1
+        # получаем список всех товаров в заказе
+        count = self.BD.select_all_product_id()
+        quantity = self.BD.select_order_quantity(count[self.step])
+
+        # отправляем ответ пользователю
+        self.send_message_order(count[self.step], quantity, message)
+
+    def pressed_btn_next_step(self, message):
+        """
+        Обрабатывает входящие текстовые сообщения при
+        нажатии на кнопку next_step.
+        """
+        # увеличивает шаг, пока шаг не будет равен количеству строк полей
+        # заказа с расчетом цены деления, начиная с 0
+        if self.step < self.BD.count_rows_order()-1:
+            self.step += 1
+        # получаем список всех товаров в заказе
+        count = self.BD.select_all_product_id()
+        # получаем количество конкретного товара,
+        # в соотвествии с шагом выборки
+        quantity = self.BD.select_order_quantity(count[self.step])
+
+        # отправляем ответ пользователю
+        self.send_message_order(count[self.step], quantity, message)
+
     def handle(self):
         # обработчик(декоратор) сообщений, который обрабатывает
         # входящие текстовые сообщения при нажатии кнопок.
@@ -234,3 +267,6 @@ class HandlerAllText(Handler):
 
             if message.text == config.KEYBOARD['BACK_STEP']:
                 self.pressed_btn_back_step(message)
+
+            if message.text == config.KEYBOARD['NEXT_STEP']:
+                self.pressed_btn_next_step(message)
