@@ -1,6 +1,6 @@
 # импортируем ответ пользователю
 from settings.message import MESSAGES
-from settings import config
+from settings import config, utility
 # импортируем класс-родитель
 from handlers.handler import Handler
 
@@ -214,6 +214,24 @@ class HandlerAllText(Handler):
         # отправляем ответ пользователю
         self.send_message_order(count[self.step], quantity, message)
 
+    def pressed_btn_apply(self, message):
+        """
+        обрабатывает входящие текстовые сообщения
+        при нажатии на кнопку "Оформить заказ"
+        """
+        # отправляем ответ пользователю
+        self.bot.send_message(
+            message.chat.id,
+            MESSAGES['apply'].format(
+                utility.get_total_cost(self.BD),
+
+                utility.get_total_quantity(self.BD)
+            ),
+            parse_mode="HTML",
+            reply_markup=self.keyboards.category_menu())
+        # отчищаем данные с заказа
+        self.BD.delete_all_order()
+
     def handle(self):
         # обработчик(декоратор) сообщений, который обрабатывает
         # входящие текстовые сообщения при нажатии кнопок.
@@ -246,14 +264,14 @@ class HandlerAllText(Handler):
                     )
 
             # ********** меню (по категориям товаров) ********** #
-            if message.text == config.KEYBOARD['SEMIPRODUCT']:
-                self.pressed_btn_product(message, 'SEMIPRODUCT')
+            if message.text == config.KEYBOARD['SHIRTS']:
+                self.pressed_btn_product(message, 'SHIRTS')
 
-            if message.text == config.KEYBOARD['GROCERY']:
-                self.pressed_btn_product(message, 'GROCERY')
+            if message.text == config.KEYBOARD['T-SHIRTS']:
+                self.pressed_btn_product(message, 'T-SHIRTS')
 
-            if message.text == config.KEYBOARD['ICE_CREAM']:
-                self.pressed_btn_product(message, 'ICE_CREAM')
+            if message.text == config.KEYBOARD['PANTS']:
+                self.pressed_btn_product(message, 'PANTS')
 
             # ********** меню (Заказа) ********** #
             if message.text == config.KEYBOARD['UP']:
@@ -270,3 +288,9 @@ class HandlerAllText(Handler):
 
             if message.text == config.KEYBOARD['NEXT_STEP']:
                 self.pressed_btn_next_step(message)
+
+            if message.text == config.KEYBOARD['APPLY']:
+                self.pressed_btn_apply(message)
+            # обработка других нажатий Пользователем
+            else:
+                self.bot.send_message(message.chat.id, message.text)
