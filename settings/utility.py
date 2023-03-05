@@ -8,7 +8,7 @@ def total_cost(list_quantity, list_price):
     order_total_cost = 0
     for ind, itm in enumerate(list_price):
         order_total_cost += list_quantity[ind]*list_price[ind]
-        return order_total_cost
+    return order_total_cost
 
 
 # считает общее количество заказанной единицы товара и возвращает результат
@@ -16,7 +16,7 @@ def total_quantity(list_quantity):
     order_total_quantity = 0
     for itm in list_quantity:
         order_total_quantity += itm
-        return order_total_quantity
+    return order_total_quantity
 
 
 def get_total_cost(BD):
